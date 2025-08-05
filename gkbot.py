@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -10,14 +11,21 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 async def approve_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.chat_join_request.approve()
-    user = update.chat_join_request.from_user
-    print(f"✅ Approved join request from: {user.full_name} (@{user.username})")
+    print(f"Approved: {update.chat_join_request.from_user.username}")
 
-def main():
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(ChatJoinRequestHandler(approve_request))
-    print("🤖 Bot is running...")
-    app.run_polling()
+
+    # Start the bot
+    runner = asyncio.create_task(app.run_polling())
+
+    # Run the bot for 2 minutes (120 seconds)
+    await asyncio.sleep(120)
+
+    # Stop the bot after 2 minutes
+    await app.shutdown()
+    print("Bot stopped after 2 minutes.")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
