@@ -8,18 +8,19 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# Fix for nested event loops (for GitHub Actions, etc.)
+# Fix nested loop for environments like GitHub Actions
 nest_asyncio.apply()
 
-# /start command
+# /start handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Bot is running! I will auto-stop in 2 minutes.")
 
-# Schedule auto-stop using application lifecycle hook
+# Graceful stop after delay
 async def stop_after_delay(app):
+    await app.running_wait()  # ✅ Wait until bot is fully running
     await asyncio.sleep(120)
     print("⏱️ 2 minutes passed. Stopping bot...")
-    await app.stop()  # Gracefully stops polling
+    await app.stop()
 
 async def main():
     token = os.getenv("BOT_TOKEN")
@@ -29,10 +30,10 @@ async def main():
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
 
-    # Start auto-stop task after app starts
-    app.post_init = lambda app: asyncio.create_task(stop_after_delay(app))
+    # ⏱️ Schedule auto-stop task after app starts
+    asyncio.create_task(stop_after_delay(app))
 
     await app.run_polling()
 
-# Run with nested loop support
+# Run main with nested asyncio
 asyncio.get_event_loop().run_until_complete(main())
