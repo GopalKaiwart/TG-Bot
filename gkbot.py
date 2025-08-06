@@ -2,23 +2,25 @@ import asyncio
 import os
 import nest_asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 
-# Fix nested event loops issue
+# Fix for nested event loops (for GitHub Actions, etc.)
 nest_asyncio.apply()
 
-# /start command handler
+# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot is running! It will stop after 2 minutes.")
+    await update.message.reply_text("✅ Bot is running! I will auto-stop in 2 minutes.")
 
-# Auto-stop function after delay
-async def stop_after_delay(app, delay: int):
-    await asyncio.sleep(delay)
-    print("⏱️ 2 minutes completed. Stopping bot...")
-    await app.stop()       # Stop the polling loop
-    await app.shutdown()   # Then shutdown the app
+# Schedule auto-stop using application lifecycle hook
+async def stop_after_delay(app):
+    await asyncio.sleep(120)
+    print("⏱️ 2 minutes passed. Stopping bot...")
+    await app.stop()  # Gracefully stops polling
 
-# Main function
 async def main():
     token = os.getenv("BOT_TOKEN")
     if not token:
@@ -27,12 +29,10 @@ async def main():
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
 
-    # Start background auto-shutdown task
-    asyncio.create_task(stop_after_delay(app, delay=120))
+    # Start auto-stop task after app starts
+    app.post_init = lambda app: asyncio.create_task(stop_after_delay(app))
 
-    # Start polling loop
     await app.run_polling()
 
-# Run in the current event loop
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+# Run with nested loop support
+asyncio.get_event_loop().run_until_complete(main())
