@@ -1,27 +1,29 @@
-name: Run Telegram Bot Every 3 Hours
+name: Telegram Bot Runner
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
-  workflow_dispatch:
+    - cron: '*/180 * * * *'  # Every 3 hours
+  workflow_dispatch:        # Manual trigger option
 
 jobs:
-  run-bot:
+  run:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Run Telegram Bot
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        run: python gkbot.py
+    - name: Run bot script
+      env:
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      run: |
+        python gkbot.py
