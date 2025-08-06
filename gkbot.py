@@ -1,31 +1,29 @@
-import os
 import asyncio
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    ChatJoinRequestHandler,
-    ContextTypes,
-)
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+import os
 
-async def approve_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.chat_join_request.approve()
-    print(f"Approved: {update.chat_join_request.from_user.username}")
+TOKEN = os.getenv("BOT_TOKEN")
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is running...")
+
+async def stop_after_delay(app, delay=120):  # 2 minutes
+    await asyncio.sleep(delay)
+    print("Stopping bot after 2 minutes.")
+    await app.shutdown()
+    await app.stop()
 
 async def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(ChatJoinRequestHandler(approve_request))
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    # Start the bot
-    runner = asyncio.create_task(app.run_polling())
+    app.add_handler(CommandHandler("start", start))
 
-    # Run the bot for 2 minutes (120 seconds)
-    await asyncio.sleep(120)
+    # Schedule shutdown task
+    asyncio.create_task(stop_after_delay(app, delay=120))
 
-    # Stop the bot after 2 minutes
-    await app.shutdown()
-    print("Bot stopped after 2 minutes.")
+    await app.run_polling()
 
 if __name__ == "__main__":
     asyncio.run(main())
